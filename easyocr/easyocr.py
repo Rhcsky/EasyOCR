@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from .detection import get_detector, get_textbox
 from .imgproc import loadImage
 from .recognition import get_recognizer, get_text
@@ -7,19 +5,12 @@ from .utils import group_text_box, get_image_list, calculate_md5, eprint
 import numpy as np
 import cv2
 import torch
+import urllib.request
 import os
-import sys
-
-if sys.version_info[0] == 2:
-    from io import open
-    from six.moves.urllib.request import urlretrieve
-    from pathlib2 import Path
-else:
-    from urllib.request import urlretrieve
-    from pathlib import Path
+from pathlib import Path
 
 BASE_PATH = os.path.dirname(__file__)
-MODULE_PATH = os.environ.get("MODULE_PATH",
+MODULE_PATH = os.environ.get("MODULE_PATH", default=
                              os.path.expanduser("~/.EasyOCR/"))
 Path(MODULE_PATH+'/model').mkdir(parents=True, exist_ok=True)
 
@@ -172,26 +163,26 @@ class Reader(object):
         CORRUPT_MSG = 'MD5 hash mismatch, possible file corruption'
         if os.path.isfile(DETECTOR_PATH) == False:
             eprint('Downloading detection model, please wait')
-            urlretrieve(model_url['detector'][0] , DETECTOR_PATH)
+            urllib.request.urlretrieve(model_url['detector'][0] , DETECTOR_PATH)
             assert calculate_md5(DETECTOR_PATH) == model_url['detector'][1], CORRUPT_MSG
             eprint('Download complete')
         elif calculate_md5(DETECTOR_PATH) != model_url['detector'][1]:
             eprint(CORRUPT_MSG)
             os.remove(DETECTOR_PATH)
             eprint('Re-downloading the detection model, please wait')
-            urlretrieve(model_url['detector'][0], DETECTOR_PATH)
+            urllib.request.urlretrieve(model_url['detector'][0], DETECTOR_PATH)
             assert calculate_md5(DETECTOR_PATH) == model_url['detector'][1], CORRUPT_MSG
         # check model file
         if os.path.isfile(MODEL_PATH) == False:
             eprint('Downloading recognition model, please wait')
-            urlretrieve(model_url[model_file][0], MODEL_PATH)
+            urllib.request.urlretrieve(model_url[model_file][0], MODEL_PATH)
             assert calculate_md5(MODEL_PATH) == model_url[model_file][1], CORRUPT_MSG
             eprint('Download complete')
         elif calculate_md5(MODEL_PATH) != model_url[model_file][1]:
             eprint(CORRUPT_MSG)
             os.remove(MODEL_PATH)
             eprint('Re-downloading the recognition model, please wait')
-            urlretrieve(model_url[model_file][0], MODEL_PATH)
+            urllib.request.urlretrieve(model_url[model_file][0], MODEL_PATH)
             assert calculate_md5(MODEL_PATH) == model_url[model_file][1], CORRUPT_MSG
             eprint('Download complete')
 
@@ -201,12 +192,10 @@ class Reader(object):
                                                          dict_list, MODEL_PATH, device = self.device)
 
     def readtext(self, image, decoder = 'greedy', beamWidth= 5, batch_size = 1,\
-                 workers = 0, allowlist = None, blocklist = None, detail = 1,\
-                 contrast_ths = 0.1,adjust_contrast = 0.5, filter_ths = 0.003,\
                  text_threshold = 0.7, low_text = 0.4, link_threshold = 0.4,\
-                 canvas_size = 2560, mag_ratio = 1.,\
-                 slope_ths = 0.1, ycenter_ths = 0.5, height_ths = 0.5,\
-                 width_ths = 0.5, add_margin = 0.1):
+                 canvas_size = 2560, mag_ratio = 1., poly = False,\
+                 contrast_ths = 0.1,adjust_contrast = 0.5, filter_ths = 0.003,\
+                 workers = 0, allowlist = None, blocklist = None, detail = 1):
         '''
         Parameters:
         file: file path or numpy-array or a byte stream object
@@ -215,7 +204,7 @@ class Reader(object):
         if type(image) == str:
             img = loadImage(image)  # can accept URL
             if image.startswith('http://') or image.startswith('https://'):
-                tmp, _ = urlretrieve(image)
+                tmp, _ = urllib.request.urlretrieve(image)
                 img_cv_grey = cv2.imread(tmp, cv2.IMREAD_GRAYSCALE)
                 os.remove(tmp)
             else:
@@ -231,8 +220,8 @@ class Reader(object):
             img_cv_grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         text_box = get_textbox(self.detector, img, canvas_size, mag_ratio, text_threshold,\
-                               link_threshold, low_text, False, self.device)
-        horizontal_list, free_list = group_text_box(text_box, slope_ths, ycenter_ths, height_ths, width_ths, add_margin)
+                               link_threshold, low_text, poly, self.device)
+        horizontal_list, free_list = group_text_box(text_box, width_ths = 0.5, add_margin = 0.1)
 
         # should add filter to screen small box out
 
@@ -246,11 +235,11 @@ class Reader(object):
             ignore_char = ''.join(set(self.character)-set(self.lang_char))
 
         if self.model_lang in ['chinese_tra','chinese_sim', 'japanese', 'korean']: decoder = 'greedy'
-        result = get_text(self.character, imgH, int(max_width), self.recognizer, self.converter, image_list,\
+        result = get_text(self.character, imgH, max_width, self.recognizer, self.converter, image_list,\
                       ignore_char, decoder, beamWidth, batch_size, contrast_ths, adjust_contrast, filter_ths,\
                       workers, self.device)
 
-        if detail == 0:
+        if detail == 0: 
             return [item[1] for item in result]
         else:
             return result

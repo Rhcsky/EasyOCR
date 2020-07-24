@@ -1,16 +1,11 @@
-# EasyOCR
-
-[![PyPI Status](https://badge.fury.io/py/easyocr.svg)](https://badge.fury.io/py/easyocr)
-[![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/JaidedAI/EasyOCR/blob/master/LICENSE)
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.fan/easyocr)
-[![GitHub stars](https://img.shields.io/github/stars/JaidedAI/EasyOCR.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/JaidedAI/EasyOCR/stargazers/)
+# Easy OCR
 
 Ready-to-use OCR with 40+ languages supported including Chinese, Japanese, Korean and Thai.
 
 ## Examples
 
 See this [Colab Demo](https://colab.fan/easyocr). You can run it in the browser.
-
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.fan/easyocr)
 
 ![example](examples/example.png)
 
@@ -104,36 +99,19 @@ In case you do not have GPU or your GPU has low memory, you can run it in CPU mo
 reader = easyocr.Reader(['th','en'], gpu = False)
 ```
 
-See [Documentation](#API-Documentation)
+There are optional arguments for readtext function, `decoder` can be 'greedy'(default), 'beamsearch', or 'wordbeamsearch'. For 'beamsearch' and 'wordbeamsearch', you can also set `beamWidth` (default=5). Bigger number will be slower but can be more accurate. For multiprocessing, you can set `workers` and `batch_size`. Current version converts image into grey scale for recognition model, so contrast can be an issue. You can try playing with `contrast_ths`, `adjust_contrast` and `filter_ths`. `allowlist` and `blocklist` accept input in string (like this blocklist = '!&$%').
 
-#### Run on command line
+### Run on command line
 
 ```shell
 $ easyocr -l ch_sim en -f chinese.jpg --detail=1 --gpu=True
 ```
 
-## Implementation Roadmap
+## To be implemented
 
-#### Phase 1 (Now - October, 2020)
-
-1. Language packs: Hindi, Arabic, Cyrillic alphabet, etc. Aiming to cover > 80-90% of world's population. See [current development list](https://github.com/JaidedAI/EasyOCR/issues/91). Also improve existing languages.
-2. Better documentation and api
-3. Language model for better decoding
-
-#### Phase 2 (After October, 2020)
-
-1. Handwritten support: Network architecture should not matter.
-The key is using GAN to generate realistic handwritten dataset.
-2. Faster processing time: model pruning (lite version) / quantization / export to other platforms
-3. Data generation script and model training pipeline
-4. Restructure code to support swappable detection and recognition algorithm.
-The api should be as easy as
-``` python
-reader = easyocr.Reader(['en'], detection='pixellink', recognition = 'ReXNet_LSTM_Attention')
-```
-The idea is to be able to plug-in any state-of-the-art model into EasyOCR. There are a lot of geniuses trying to make better detection/recognition model. We are not trying to be a genius here, just make genius's works quickly accessible to the public ... for free. (well I believe most geniuses want their work to create positive impact as fast/big as possible) The pipeline should be something like below diagram. Grey slots are placeholders for changeable light blue modules.
-
-![plan](examples/easyocr_framework.jpeg)
+1. Language packs: Hindi, Arabic, Cyrillic alphabet, etc.
+2. Language model for better decoding
+3. Better documentation and api
 
 ## Acknowledgement and References
 
@@ -151,13 +129,7 @@ And good read about CTC from distill.pub [here](https://distill.pub/2017/ctc/).
 
 Let's advance humanity together by making AI available to everyone!
 
-3 ways to contribute:
-
-**Coder:** Please send PR for small bug/improvement. For bigger one, discuss with us by open an issue first. There is a list of possible bug/improvement issue tagged with ['PR WELCOME'](https://github.com/JaidedAI/EasyOCR/issues?q=is%3Aissue+is%3Aopen+label%3A%22PR+WELCOME%22).
-
-**User:** Post success stories in [Book of Gratitude](https://github.com/JaidedAI/EasyOCR/issues/160) to encourage further development. Also post failure cases in [Book of Pain](https://github.com/JaidedAI/EasyOCR/issues/161) to help improving future model.
-
-**Tech leader/Guru:** If you found this library useful, please spread the word! (See [Yann Lecun's post](https://www.facebook.com/yann.lecun/posts/10157018122787143) about EasyOCR)
+Please create issue to report bug or suggest new feature. Pull requests are welcome. Or if you found this library useful, just tell your friend about it.
 
 ## Guideline for new language request
 
@@ -175,53 +147,3 @@ If your language has unique elements (such as 1. Arabic: characters change form 
 Lastly, please understand that my priority will have to go to popular language or set of languages that share most of characters together (also tell me if your language share a lot of characters with other). It takes me at least a week to work for new model. You may have to wait a while for new model to be released.
 
 See [List of languages in development](https://github.com/JaidedAI/EasyOCR/issues/91)
-
-## API Documentation
-
-#### `Reader` class
-> Base class for EasyOCR
->
-> **Parameters**
-> * **lang_list** (list) - list of language code you want to recognize, for example ['ch_sim','en']. List of supported language code is [here](#Supported-Languages).
-> * **gpu** (bool, string, default = True)
->
-> **Attribute**
-> * **lang_char** - Show all available characters in current model
-
-#### `readtext` method
-> Main method for Reader object. There are 4 groups of parameter: General,
-Contrast, Text Detection and Bounding Box Merging.
->
-> **Parameters 1: General**
-> * **image** (string, numpy array, byte) - Input image
-> * **decoder** (string, default = 'greedy') - options are 'greedy', 'beamsearch' and 'wordbeamsearch'.
-> * **beamWidth** (int, default = 5) - How many beam to keep when decoder = 'beamsearch' or 'wordbeamsearch'
-> * **batch_size** (int, default = 1) - batch_size>1 will make EasyOCR faster but use more memory
-> * **workers** (int, default = 0) - Number thread used in of dataloader
-> * **allowlist** (string) - Force EasyOCR to recognize only subset of characters. Useful for specific problem (E.g. license plate, etc.)
-> * **blocklist** (string) - Block subset of character. This argument will be ignored if allowlist is given.
-> * **detail** (int, default = 1) - Set this to 0 for simple output
->
-> **Parameters 2: Contrast**
-> * **contrast_ths** (float, default = 0.1) - Text box with contrast lower than this value will be passed into model 2 times. First is with original image and second with contrast adjusted to 'adjust_contrast' value. The one with more confident level will be returned as a result.
-> * **adjust_contrast** (float, default = 0.5) - target contrast level for low contrast text box
->
-> **Parameters 3: Text Detection (from CRAFT)**
-> * **text_threshold** (float, default = 0.7) - Text confidence threshold
-> * **low_text** (float, default = 0.4) -  Text low-bound score
-> * **link_threshold** (float, default = 0.4) - Link confidence threshold
-> * **canvas_size** (int, default = 2560) - Maximum image size. Image bigger than this value will be resized down.  
-> * **mag_ratio** (float, default = 1) - Image magnification ratio
->
-> **Parameters 4: Bounding Box Merging**
->
-> This set of parameter controls when adjacent bounding boxes merge with each other. Every parameters except 'slope_ths' is in the unit of box height.
->
-> ![width_ths](examples/width_ths.png)
-> * **slope_ths** (float, default = 0.1) - Maximum slope (delta y/delta x) to considered merging. Low value means tiled boxes will not be merged.
-> * **ycenter_ths** (float, default = 0.5) - Maximum shift in y direction. Boxes with different level should not be merged.
-> * **height_ths** (float, default = 0.5) - Maximum different in box height. Boxes with very different text size should not be merged.
-> * **width_ths** (float, default = 0.5) - Maximum horizontal distance to merge boxes.
-> * **add_margin** (float, default = 0.1) - Extend bounding boxes in all direction by certain value. This is important for language with complex script (E.g. Thai).
->
-> **Return** (list)
